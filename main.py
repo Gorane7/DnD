@@ -1,109 +1,141 @@
 import random
 import matplotlib.pyplot as plt
+from gorgame import game
 
-global exit
+global cli_running
 end_keywords = ["exit", "end", "terminate", "over", "stop"]
 
 def run_cli():
-    global exit
-    exit = False
-    while not exit:
+    global cli_running
+    cli_running = True
+    while cli_running:
         cmd = input("Enter command: ").split(" ")
         process_cmd(cmd)
 
 def process_cmd(cmd):
     if len(cmd) == 1:
         if check_exit(cmd):
+            exit()
             return
     if check_roll(cmd):
+        print(roll(cmd))
         return
     if check_analyze(cmd):
+        analyze(cmd)
         return
 
 def check_exit(cmd):
-    global exit
     if cmd[0].lower() in end_keywords:
-        exit = True
         return True
 
-def check_roll(cmd, known = False):
+def exit():
+    global cli_running
+    cli_running = False
+
+def roll(cmd):
+    roll_type = check_roll_type(cmd)
+    if roll_type == "high":
+        return special_roll(cmd[1:], "high")
+    elif roll_type == "low":
+        return special_roll(cmd[1:], "low")
+    elif roll_type == "normal":
+        return simple_roll(cmd[1:])
+
+def check_roll(cmd):
     if cmd[0] == "roll":
-        if "low" in cmd[-1]:
-            if cmd[-1][:-3].isdigit():
-                if known:
-                    return roll(cmd[1:-1], adv = "low", adv_amount = int(cmd[-1][:-3]))
-                else:
-                    print(roll(cmd[1:-1], adv = "low", adv_amount = int(cmd[-1][:-3])))
-            else:
-                print("Wrong syntax for rolling, correct example would be 'roll 4d6 3d20 2high'")
-        elif "high" in cmd[-1]:
-            if cmd[-1][:-4].isdigit():
-                if known:
-                    return roll(cmd[1:-1], adv = "high", adv_amount = int(cmd[-1][:-4]))
-                else:
-                    print(roll(cmd[1:-1], adv = "high", adv_amount = int(cmd[-1][:-4])))
-            else:
-                print("Wrong syntax for rolling, correct example would be 'roll 4d6 3d20 2high'")
-        else:
-            if known:
-                return roll(cmd[1:])
-            else:
-                print(roll(cmd[1:]))
+        is_valid = True
+        for word in cmd[1:]:
+            word_valid = False
+            temp_word = word.split("d")
+
+            if len(temp_word) == 2:
+                if temp_word[0].isdigit() and temp_word[1].isdigit():
+                    word_valid = True
+
+            if word.split("high")[0].isdigit() and word.split("high")[0] + "high" == word:
+                word_valid = True
+            if word.split("low")[0].isdigit() and word.split("low")[0] + "low" == word:
+                word_valid = True
+
+            if not word_valid:
+                is_valid = False
+        if not is_valid:
+            print("Wrong syntax for rolling, correct example would be 'roll 4d6 3d20 2high'")
+            return False
         return True
+    return False
+
+def check_roll_type(cmd):
+    if "high" in cmd[-1] or "low" in cmd[-1]:
+        if "high" in cmd[-1]:
+            type = "high"
+        if "low" in cmd[-1]:
+            type = "low"
+
+        total = 0
+        for word in cmd[1:-1]:
+            total += int(word.split("d")[0])
+        chosen = int(cmd[-1].split(type)[0])
+        if chosen > total:
+            print("The amount chosen with '" + type + "' can't be larger than the amount of dice rolled.")
+            return False
+        return type
+    return "normal"
+
+def analyze(cmd):
+    values = {}
+    for i in range(int(cmd[1])):
+        value = sum(roll(cmd[2:]))
+        if str(value) in values:
+            values[str(value)] += 1
+        else:
+            values[str(value)] = 0
+
+    temp_values = []
+    total = 0
+    for value, amount in values.items():
+        total += int(value) * amount
+        temp_values.append([int(value), amount])
+    temp_values = sorted(temp_values, key = lambda x: x[0])
+    avg = total / int(cmd[1])
+
+    ordered_values = [[], []]
+    for value_pair in temp_values:
+        ordered_values[0].append(value_pair[0])
+        ordered_values[1].append(value_pair[1])
+
+    print(avg)
+    plt.bar(ordered_values[0], ordered_values[1])
+    plt.show()
 
 def check_analyze(cmd):
     if cmd[0] == "analyze" and cmd[1].isdigit():
-        values = {}
-        for i in range(int(cmd[1])):
-            value = check_roll(cmd[2:], known = True)
-            if str(value) in values:
-                values[str(value)] += 1
-            else:
-                values[str(value)] = 0
+        if check_roll(cmd[2:]):
+            return True
+    return False
 
-        temp_values = []
-        total = 0
-        for value, amount in values.items():
-            total += int(value) * amount
-            temp_values.append([int(value), amount])
-        temp_values = sorted(temp_values, key = lambda x: x[0])
-        avg = total / int(cmd[1])
-
-        ordered_values = [[], []]
-        for value_pair in temp_values:
-            ordered_values[0].append(value_pair[0])
-            ordered_values[1].append(value_pair[1])
-
-        print(avg)
-        plt.bar(ordered_values[0], ordered_values[1])
-        plt.show()
-        return True
-
-def roll(dice, adv = None, adv_amount = None):
+def simple_roll(dice):
     numbers = []
     types = []
     rolls = []
     for die in dice:
-        if "d" not in die:
-            return "Wrong syntax for rolling, correct example would be 'roll 4d6 3d20 2high'"
-        if len(die.split("d")) != 2:
-            return "Wrong syntax for rolling, correct example would be 'roll 4d6 3d20 2high'"
         temp = die.split("d")
-        if not temp[0].isdigit() or not temp[1].isdigit():
-            return "Wrong syntax for rolling, correct example would be 'roll 4d6 3d20 2high'"
         numbers.append(int(temp[0]))
         types.append(int(temp[1]))
     for number, type in zip(numbers, types):
         for i in range(number):
             rolls.append(random.randint(1, type))
-    rolls.sort()
-    if adv_amount:
-        if adv_amount > len(rolls):
-            return "Argument for high/low can't be larger than the total amount of dice"
-        if adv == "low":
-            rolls = rolls[:adv_amount]
-        if adv == "high":
-            rolls = rolls[-adv_amount:]
-    return sum(rolls)
+    return rolls
+
+def special_roll(dice, type):
+    chosen = int(dice[-1].split(type)[0])
+    rolls = simple_roll(dice[:-1])
+    if type == "high":
+        rolls = sorted(rolls, reverse = True)
+    else:
+        rolls = sorted(rolls)
+    rolls = rolls[:chosen]
+    random.shuffle(rolls)
+    return rolls
 
 run_cli()
