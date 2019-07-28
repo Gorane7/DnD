@@ -85,7 +85,7 @@ def check_roll_type(cmd):
 def analyze(cmd):
     values = {}
     for i in range(int(cmd[1])):
-        value = sum(roll(cmd[2:]))
+        value = sum(roll(["roll"] + cmd[2:]))
         if str(value) in values:
             values[str(value)] += 1
         else:
@@ -110,7 +110,7 @@ def analyze(cmd):
 
 def check_analyze(cmd):
     if cmd[0] == "analyze" and cmd[1].isdigit():
-        if check_roll(cmd[2:]):
+        if check_roll(["roll"] + cmd[2:]):
             return True
     return False
 
