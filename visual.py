@@ -8,12 +8,15 @@ top_bar = game.basics.Coords([display.x, 100])
 middle_bar = game.basics.Coords([200, display.y + top_bar.y])
 button = game.basics.Coords([middle_bar.x, 100])
 size = (display.x * 2 + middle_bar.x, display.y + top_bar.y)
-#display_order = ["DM", "party", None, "party"]
-display_order = ["party", "DM", "party", None]
+display_order = ["DM", "party", None, "party"]
+#display_order = ["party", "DM", "party", None]
 current_map = None
 agent_on_queue = None
+wall_on_queue = None
 creature_radius = 2.5
 vision_radius = 300
+wall_thickness = 1
+wall_colour = "brown"
 
 
 def main():
@@ -31,6 +34,8 @@ def my_loop():
     check_add_agent_button()
     check_add_agent_inputs()
     check_agent_on_queue()
+    check_add_wall_button()
+    check_wall_on_queue()
 
 def setup():
     global my_game
@@ -52,6 +57,8 @@ def setup():
 
     my_game.screen.window.get("DM bar").add_component([0, 0], button, 1, "add agent button", background = "green", button = True)
     my_game.screen.window.get("DM bar").get("add agent button").change_attributes(text = "Add agent", colour = "black")
+    my_game.screen.window.get("DM bar").add_component([button.x, 0], button, 1, "add wall button", background = "green", button = True)
+    my_game.screen.window.get("DM bar").get("add wall button").change_attributes(text = "Add wall", colour = "black")
 
 def check_new_map_button():
     if my_game.screen.window.get("middle bar").get("new map button").pressed:
@@ -69,6 +76,10 @@ def check_add_agent_button():
     if my_game.screen.window.get("DM bar").get("add agent button").pressed:
         make_add_agent_inputs()
 
+def check_add_wall_button():
+    if my_game.screen.window.get("DM bar").get("add wall button").pressed:
+        add_wall_to_queue()
+
 def save_map():
     if not current_map:
         return
@@ -79,6 +90,20 @@ def save_map():
     file.write(str(x) + "\n")
     file.write(str(y) + "\n")
     file.write(str(tile) + "\n")
+    file.write(str(len(my_game.spaces[current_map + " space"].agents)) + "\n")
+    file.write(str(len(my_game.spaces[current_map + " space"].walls)) + "\n")
+    for agent in my_game.spaces[current_map + " space"].agents:
+        x = str(agent.loc.x)
+        y = str(agent.loc.y)
+        faction = agent.faction
+        colour = agent.colour
+        file.write(":".join([x, y, faction, colour]) + "\n")
+    for wall in my_game.spaces[current_map + " space"].walls:
+        x1 = str(wall.start.x)
+        y1 = str(wall.start.y)
+        x2 = str(wall.end.x)
+        y2 = str(wall.end.y)
+        file.write(":".join([x1, y1, x2, y2]) + "\n")
     file.close()
     clear_map()
 
@@ -90,7 +115,15 @@ def load_map(name):
         x = int(file.readline())
         y = int(file.readline())
         tile = int(file.readline())
+        agents = int(file.readline())
+        walls = int(file.readline())
         make_map(x, y, tile, name)
+        for i in range(agents):
+            agent_data = file.readline().strip("\n").split(":")
+            add_agent(float(agent_data[0]), float(agent_data[1]), agent_data[2], agent_data[3])
+        for i in range(walls):
+            wall_data = file.readline().strip("\n").split(":")
+            add_wall([float(wall_data[0]), float(wall_data[1])], [float(wall_data[2]), float(wall_data[3])])
     else:
         print("does not exist")
 
@@ -99,6 +132,14 @@ def add_agent_to_queue(faction, colour):
     agent_on_queue = {
         "faction": faction,
         "colour": colour
+    }
+
+def add_wall_to_queue():
+    global wall_on_queue
+    wall_on_queue = {
+        "wall": True,
+        "point1": None,
+        "point2": None
     }
 
 def check_agent_on_queue():
@@ -114,11 +155,33 @@ def check_agent_on_queue():
     agent_on_queue = None
     add_agent(x, y, faction, colour)
 
+def check_wall_on_queue():
+    global wall_on_queue
+    if not wall_on_queue:
+        return
+    if not my_game.screen.window.get("DM space").clicked:
+        return
+    x = my_game.screen.window.get("DM space").clicked.x
+    y = my_game.screen.window.get("DM space").clicked.y
+    if not wall_on_queue["point1"]:
+        wall_on_queue["point1"] = game.basics.Coords([x, y])
+    elif not wall_on_queue["point2"]:
+        wall_on_queue["point2"] = game.basics.Coords([x, y])
+        point1 = wall_on_queue["point1"]
+        point2 = wall_on_queue["point2"]
+        wall_on_queue = None
+        add_wall(point1, point2)
+
 def add_agent(x, y, faction, colour):
     my_game.spaces[current_map + " space"].add_agent([x, y], creature_radius, colour, faction = faction, vision_radius = vision_radius)
-    my_game.screen.window.get("DM space").space.agents.append(my_game.spaces[current_map + " space"].agents[-1])
-    my_game.screen.window.get("party space").space.agents.append(my_game.spaces[current_map + " space"].agents[-1])
+    #my_game.screen.window.get("DM space").space.agents.append(my_game.spaces[current_map + " space"].agents[-1])
+    #my_game.screen.window.get("party space").space.agents.append(my_game.spaces[current_map + " space"].agents[-1])
     #my_game.screen.window.get("party space").space = my_game.spaces[current_map + " space"]
+    my_game.screen.window.get("DM space").update_locs()
+    my_game.screen.window.get("party space").update_locs()
+
+def add_wall(point1, point2):
+    my_game.spaces[current_map + " space"].add_wall(point1, point2, wall_thickness, wall_colour)
     my_game.screen.window.get("DM space").update_locs()
     my_game.screen.window.get("party space").update_locs()
 
