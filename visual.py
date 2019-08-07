@@ -8,8 +8,12 @@ top_bar = game.basics.Coords([display.x, 100])
 middle_bar = game.basics.Coords([200, display.y + top_bar.y])
 button = game.basics.Coords([middle_bar.x, 100])
 size = (display.x * 2 + middle_bar.x, display.y + top_bar.y)
-display_order = ["DM", "party"]
+#display_order = ["DM", "party", None, "party"]
+display_order = ["party", "DM", "party", None]
 current_map = None
+agent_on_queue = None
+creature_radius = 2.5
+vision_radius = 300
 
 
 def main():
@@ -24,17 +28,20 @@ def my_loop():
     check_save_map_button()
     check_load_map_button()
     check_load_map_inputs()
+    check_add_agent_button()
+    check_add_agent_inputs()
+    check_agent_on_queue()
 
 def setup():
     global my_game
     my_game = game.Game(size)
     my_game.screen.window.add_component([0, 0], top_bar, 1, display_order[0] + " bar", background = "red", window = True)
     my_game.screen.window.add_component([0, top_bar.y], display, 0, display_order[0] + " grid", background = "grey", gridview = True)
-    my_game.screen.window.add_component([0, top_bar.y], display, 1, display_order[0] + " space", spaceview = True)
+    my_game.screen.window.add_component([0, top_bar.y], display, 1, display_order[0] + " space", spaceview = True, faction = display_order[2])
     my_game.screen.window.add_component([display.x, 0], middle_bar, 1, "middle bar", background = "blue", window = True)
     my_game.screen.window.add_component([display.x + middle_bar.x, 0], top_bar, 1, display_order[1] + " bar", background = "red", window = True)
     my_game.screen.window.add_component([display.x + middle_bar.x, top_bar.y], display, 0, display_order[1] + " grid", background = "grey", gridview = True)
-    my_game.screen.window.add_component([display.x + middle_bar.x, top_bar.y], display, 1, display_order[1] + " space", spaceview = True)
+    my_game.screen.window.add_component([display.x + middle_bar.x, top_bar.y], display, 1, display_order[1] + " space", spaceview = True, faction = display_order[3])
 
     my_game.screen.window.get("middle bar").add_component([0, 0], button, 1, "new map button", background = "green", button = True)
     my_game.screen.window.get("middle bar").get("new map button").change_attributes(text = "New map", colour = "black")
@@ -42,6 +49,9 @@ def setup():
     my_game.screen.window.get("middle bar").get("save map button").change_attributes(text = "Save map", colour = "black")
     my_game.screen.window.get("middle bar").add_component([0, button.y * 2], button, 1, "load map button", background = "green", button = True)
     my_game.screen.window.get("middle bar").get("load map button").change_attributes(text = "Load map", colour = "black")
+
+    my_game.screen.window.get("DM bar").add_component([0, 0], button, 1, "add agent button", background = "green", button = True)
+    my_game.screen.window.get("DM bar").get("add agent button").change_attributes(text = "Add agent", colour = "black")
 
 def check_new_map_button():
     if my_game.screen.window.get("middle bar").get("new map button").pressed:
@@ -54,6 +64,10 @@ def check_save_map_button():
 def check_load_map_button():
     if my_game.screen.window.get("middle bar").get("load map button").pressed:
         make_load_map_inputs()
+
+def check_add_agent_button():
+    if my_game.screen.window.get("DM bar").get("add agent button").pressed:
+        make_add_agent_inputs()
 
 def save_map():
     if not current_map:
@@ -71,6 +85,7 @@ def save_map():
 def load_map(name):
     file_path = "maps/" + name + ".txt"
     if os.path.exists(file_path):
+        clear_map()
         file = open("maps/" + name + ".txt", "r")
         x = int(file.readline())
         y = int(file.readline())
@@ -79,6 +94,34 @@ def load_map(name):
     else:
         print("does not exist")
 
+def add_agent_to_queue(faction, colour):
+    global agent_on_queue
+    agent_on_queue = {
+        "faction": faction,
+        "colour": colour
+    }
+
+def check_agent_on_queue():
+    global agent_on_queue
+    if not agent_on_queue:
+        return
+    if not my_game.screen.window.get("DM space").clicked:
+        return
+    x = my_game.screen.window.get("DM space").clicked.x
+    y = my_game.screen.window.get("DM space").clicked.y
+    faction = agent_on_queue["faction"]
+    colour = agent_on_queue["colour"]
+    agent_on_queue = None
+    add_agent(x, y, faction, colour)
+
+def add_agent(x, y, faction, colour):
+    my_game.spaces[current_map + " space"].add_agent([x, y], creature_radius, colour, faction = faction, vision_radius = vision_radius)
+    my_game.screen.window.get("DM space").space.agents.append(my_game.spaces[current_map + " space"].agents[-1])
+    my_game.screen.window.get("party space").space.agents.append(my_game.spaces[current_map + " space"].agents[-1])
+    #my_game.screen.window.get("party space").space = my_game.spaces[current_map + " space"]
+    my_game.screen.window.get("DM space").update_locs()
+    my_game.screen.window.get("party space").update_locs()
+
 def clear_map():
     global current_map
     current_map = None
@@ -86,6 +129,8 @@ def clear_map():
     my_game.spaces = {}
     my_game.screen.window.get("DM grid").remove_grid()
     my_game.screen.window.get("DM space").remove_space()
+    my_game.screen.window.get("party grid").remove_grid()
+    my_game.screen.window.get("party space").remove_space()
 
 def make_map(x, y, tile, name):
     global current_map
@@ -97,6 +142,8 @@ def make_map(x, y, tile, name):
     my_game.maps[name + " map"].fill_chessboard_pattern()
     my_game.screen.window.get("DM grid").add_grid(my_game.maps[name + " map"].tiles)
     my_game.screen.window.get("DM space").add_space(my_game.spaces[name + " space"], space_per_pixel)
+    my_game.screen.window.get("party grid").add_grid(my_game.maps[name + " map"].tiles)
+    my_game.screen.window.get("party space").add_space(my_game.spaces[name + " space"], space_per_pixel)
     current_map = name
 
 def make_new_map_inputs():
@@ -154,5 +201,30 @@ def check_load_map_inputs():
     if name:
         load_map(name)
     remove_load_map_inputs()
+
+def make_add_agent_inputs():
+    my_game.screen.window.get("DM bar").add_component([0, 0], [button.x, button.y / 2], 1, "add agent faction", background = "white", input = True)
+    my_game.screen.window.get("DM bar").add_component([0, button.y / 2], [button.x, button.y / 2], 1, "add agent colour", background = "white", input = True)
+    my_game.screen.window.get("DM bar").get("add agent faction").change_colours(active = "light grey")
+    my_game.screen.window.get("DM bar").get("add agent colour").change_colours(active = "light grey")
+    my_game.screen.window.get("DM bar").get("add agent faction").change_default_text("faction")
+    my_game.screen.window.get("DM bar").get("add agent colour").change_default_text("colour")
+
+def remove_add_agent_inputs():
+    my_game.screen.window.get("DM bar").remove("add agent faction")
+    my_game.screen.window.get("DM bar").remove("add agent colour")
+
+def check_add_agent_inputs():
+    if not my_game.output:
+        return
+    faction, colour = None, None
+    for key, value in my_game.output.items():
+        if key == "add agent faction":
+            faction = value
+        if key == "add agent colour":
+            colour = value
+    if faction and colour:
+        add_agent_to_queue(faction, colour)
+    remove_add_agent_inputs()
 
 main()
