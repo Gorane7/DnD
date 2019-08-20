@@ -202,10 +202,10 @@ def make_map(x, y, tile, name):
     current_map = name
 
 def make_new_map_inputs():
-    my_game.screen.window.get("middle bar").add_component([0, 0], [button.x, button.y / 4], "map x size", background = "white", input = True, active_colour = "light grey", text = "x size")
-    my_game.screen.window.get("middle bar").add_component([0, button.y / 4], [button.x, button.y / 4], "map y size", background = "white", input = True, active_colour = "light grey", text = "y size")
-    my_game.screen.window.get("middle bar").add_component([0, button.y * 2 / 4], [button.x, button.y / 4], "map tile size", background = "white", input = True, active_colour = "light grey", text = "tile size")
-    my_game.screen.window.get("middle bar").add_component([0, button.y * 3 / 4], [button.x, button.y / 4], "map name", background = "white", input = True, active_colour = "light grey", text = "name")
+    my_game.screen.window.get("middle bar").add_component([0, 0], [button.x, button.y / 4], "map x size", background = "white", input = True, text = "x size")
+    my_game.screen.window.get("middle bar").add_component([0, button.y / 4], [button.x, button.y / 4], "map y size", background = "white", input = True, text = "y size")
+    my_game.screen.window.get("middle bar").add_component([0, button.y * 2 / 4], [button.x, button.y / 4], "map tile size", background = "white", input = True, text = "tile size")
+    my_game.screen.window.get("middle bar").add_component([0, button.y * 3 / 4], [button.x, button.y / 4], "map name", background = "white", input = True, text = "name")
 
 def remove_new_map_inputs():
     my_game.screen.window.get("middle bar").remove("map x size")
