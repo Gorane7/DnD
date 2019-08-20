@@ -48,17 +48,12 @@ def setup():
     my_game.screen.window.add_component([display.x + middle_bar.x, top_bar.y], display, display_order[1] + " grid", background = "grey", gridview = True)
     my_game.screen.window.add_component([display.x + middle_bar.x, top_bar.y], display, display_order[1] + " space", height = 2, spaceview = True, faction = display_order[3])
 
-    my_game.screen.window.get("middle bar").add_component([0, 0], button, "new map button", background = "green", button = True)
-    my_game.screen.window.get("middle bar").get("new map button").change_attributes(text = "New map", colour = "black")
-    my_game.screen.window.get("middle bar").add_component([0, button.y], button, "save map button", background = "green", button = True)
-    my_game.screen.window.get("middle bar").get("save map button").change_attributes(text = "Save map", colour = "black")
-    my_game.screen.window.get("middle bar").add_component([0, button.y * 2], button, "load map button", background = "green", button = True)
-    my_game.screen.window.get("middle bar").get("load map button").change_attributes(text = "Load map", colour = "black")
+    my_game.screen.window.get("middle bar").add_component([0, 0], button, "new map button", background = "green", button = True, text = "New map")
+    my_game.screen.window.get("middle bar").add_component([0, button.y], button, "save map button", background = "green", button = True, text = "Save map")
+    my_game.screen.window.get("middle bar").add_component([0, button.y * 2], button, "load map button", background = "green", button = True, text = "Load map")
 
-    my_game.screen.window.get("DM bar").add_component([0, 0], button, "add agent button", background = "green", button = True)
-    my_game.screen.window.get("DM bar").get("add agent button").change_attributes(text = "Add agent", colour = "black")
-    my_game.screen.window.get("DM bar").add_component([button.x, 0], button, "add wall button", background = "green", button = True)
-    my_game.screen.window.get("DM bar").get("add wall button").change_attributes(text = "Add wall", colour = "black")
+    my_game.screen.window.get("DM bar").add_component([0, 0], button, "add agent button", background = "green", button = True, text = "Add agent")
+    my_game.screen.window.get("DM bar").add_component([button.x, 0], button, "add wall button", background = "green", button = True, text = "Add wall")
 
 def check_new_map_button():
     if my_game.screen.window.get("middle bar").get("new map button").pressed:
@@ -174,9 +169,6 @@ def check_wall_on_queue():
 
 def add_agent(x, y, faction, colour):
     my_game.spaces[current_map + " space"].add_agent([x, y], creature_radius, colour, faction = faction, vision_radius = vision_radius)
-    #my_game.screen.window.get("DM space").space.agents.append(my_game.spaces[current_map + " space"].agents[-1])
-    #my_game.screen.window.get("party space").space.agents.append(my_game.spaces[current_map + " space"].agents[-1])
-    #my_game.screen.window.get("party space").space = my_game.spaces[current_map + " space"]
     my_game.screen.window.get("DM space").update_locs()
     my_game.screen.window.get("party space").update_locs()
 
@@ -210,18 +202,10 @@ def make_map(x, y, tile, name):
     current_map = name
 
 def make_new_map_inputs():
-    my_game.screen.window.get("middle bar").add_component([0, 0], [button.x, button.y / 4], "map x size", background = "white", input = True)
-    my_game.screen.window.get("middle bar").add_component([0, button.y / 4], [button.x, button.y / 4], "map y size", background = "white", input = True)
-    my_game.screen.window.get("middle bar").add_component([0, button.y * 2 / 4], [button.x, button.y / 4], "map tile size", background = "white", input = True)
-    my_game.screen.window.get("middle bar").add_component([0, button.y * 3 / 4], [button.x, button.y / 4], "map name", background = "white", input = True)
-    my_game.screen.window.get("middle bar").get("map x size").change_colours(active = "light grey")
-    my_game.screen.window.get("middle bar").get("map y size").change_colours(active = "light grey")
-    my_game.screen.window.get("middle bar").get("map tile size").change_colours(active = "light grey")
-    my_game.screen.window.get("middle bar").get("map name").change_colours(active = "light grey")
-    my_game.screen.window.get("middle bar").get("map x size").change_default_text("x size")
-    my_game.screen.window.get("middle bar").get("map y size").change_default_text("y size")
-    my_game.screen.window.get("middle bar").get("map tile size").change_default_text("tile size")
-    my_game.screen.window.get("middle bar").get("map name").change_default_text("name")
+    my_game.screen.window.get("middle bar").add_component([0, 0], [button.x, button.y / 4], "map x size", background = "white", input = True, active_colour = "light grey", text = "x size")
+    my_game.screen.window.get("middle bar").add_component([0, button.y / 4], [button.x, button.y / 4], "map y size", background = "white", input = True, active_colour = "light grey", text = "y size")
+    my_game.screen.window.get("middle bar").add_component([0, button.y * 2 / 4], [button.x, button.y / 4], "map tile size", background = "white", input = True, active_colour = "light grey", text = "tile size")
+    my_game.screen.window.get("middle bar").add_component([0, button.y * 3 / 4], [button.x, button.y / 4], "map name", background = "white", input = True, active_colour = "light grey", text = "name")
 
 def remove_new_map_inputs():
     my_game.screen.window.get("middle bar").remove("map x size")
@@ -247,9 +231,7 @@ def check_new_map_inputs():
     remove_new_map_inputs()
 
 def make_load_map_inputs():
-    my_game.screen.window.get("middle bar").add_component([0, button.y * 2], button, "load map name", background = "white", input = True)
-    my_game.screen.window.get("middle bar").get("load map name").change_colours(active = "light grey")
-    my_game.screen.window.get("middle bar").get("load map name").change_default_text("name")
+    my_game.screen.window.get("middle bar").add_component([0, button.y * 2], button, "load map name", background = "white", input = True, active_colour = "light grey", text = "name")
 
 def remove_load_map_inputs():
     my_game.screen.window.get("middle bar").remove("load map name")
@@ -266,12 +248,8 @@ def check_load_map_inputs():
     remove_load_map_inputs()
 
 def make_add_agent_inputs():
-    my_game.screen.window.get("DM bar").add_component([0, 0], [button.x, button.y / 2], "add agent faction", background = "white", input = True)
-    my_game.screen.window.get("DM bar").add_component([0, button.y / 2], [button.x, button.y / 2], "add agent colour", background = "white", input = True)
-    my_game.screen.window.get("DM bar").get("add agent faction").change_colours(active = "light grey")
-    my_game.screen.window.get("DM bar").get("add agent colour").change_colours(active = "light grey")
-    my_game.screen.window.get("DM bar").get("add agent faction").change_default_text("faction")
-    my_game.screen.window.get("DM bar").get("add agent colour").change_default_text("colour")
+    my_game.screen.window.get("DM bar").add_component([0, 0], [button.x, button.y / 2], "add agent faction", background = "white", input = True, active_colour = "light grey", text = "faction")
+    my_game.screen.window.get("DM bar").add_component([0, button.y / 2], [button.x, button.y / 2], "add agent colour", background = "white", input = True, active_colour = "light grey", text = "colour")
 
 def remove_add_agent_inputs():
     my_game.screen.window.get("DM bar").remove("add agent faction")
